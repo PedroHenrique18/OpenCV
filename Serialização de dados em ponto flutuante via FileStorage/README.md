@@ -1,78 +1,31 @@
-# 2.2. Exercícios
+# 3.2. Exercícios
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [regions.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.py). Esse programa deverá solicitar ao usuário as coordenadas de dois pontos P1
- e P2
- localizados dentro dos limites do tamanho da imagem e exibir que lhe for fornecida. Entretanto, a região definida pelo retângulo de vértices opostos definidos pelos pontos P1
- e P2
- será exibida com o negativo da imagem na região correspondente.
+◉Utilizando o programa filestorage.cpp como base, crie um programa [filestorage.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Serializa%C3%A7%C3%A3o%20de%20dados%20em%20ponto%20flutuante%20via%20FileStorage/filestorage.py) que gere uma imagem de dimensões 256x256 pixels contendo uma senóide de 4 períodos com amplitude de 127 desenhada na horizontal, como aquela apresentada na Figura 6 . Grave a imagem no formato PNG e no formato YML. Compare os arquivos gerados, extraindo uma linha de cada imagem gravada e comparando a diferença entre elas. Trace um gráfico da diferença calculada ao longo da linha correspondente extraída nas imagens. O que você observa?
  
- # Regions.py
+ # filestorage.py
 ```
 import cv2 as cv
 import numpy as np
+import math
 
-img = cv.imread('pedro.jpg')
+side = 256
+periodos = 4
 
-altura, largura = img.shape[:2] 
+#criando matriz 
+img = np.zeros((side,side), dtype='float32')
 
-x1=int(input("valor entre 0 e %d de x1 "% (altura)))
-y1=int(input("valor entre 0 e %d de y1 "% (largura)))
-x2=int(input("valor entre 0 e %d de x2 "% (altura)))
-y2=int(input("valor entre 0 e %d de y2 "% (largura)))
+for i in range(0, side):
+    for j in range(0, side):
+      img[j, i] =float( 127 * math.sin(2 *3.14 * periodos * j / side) + 128)
+    
+cv.normalize(img, img, 0, 255, cv.NORM_MINMAX)
+# Converte a imagem de origem em array Numpy inteiro de 8 bits sem sinal
+arr = np.uint8(img)
 
-for i in range(x1, x2): #percorre linhas
- for j in range(y1, y2): #percorre colunas
-  pixel = img[i,j]
-
-  pixel[0] = 255 - pixel[0]
-  pixel[1] = 255 - pixel[1]
-  pixel[2] = 255 - pixel[2]
-
-  pixel = img
-  
-
-# Convertendo para negativo
-#gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#cv.imshow('Gray', 255-gray)
-cv.imshow("Imagem modificada", img)
-cv.waitKey(0)
+cv.imshow("image", arr)
+cv.waitKey()
 ```
 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.png">
-</div>
-
-
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [trocaregioes.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.py). Seu programa deverá trocar os quadrantes em diagonal na imagem. Explore o uso da classe Mat e seus construtores para criar as regiões que serão trocadas.
-
-# trocaregioes.py
-```
-import cv2 as cv
-import numpy as np
-
-img = cv.imread('pedro.jpg')
-img2 = cv.imread('pedro.jpg')
-
-altura, largura = img.shape[:2] 
-
-x= int(altura-(altura/2))
-y =int( largura -(largura/2))
-print(x,y)
-
-for i in range(0, x): #percorre linhas
- for j in range(0, y): #percorre colunas
-  img2[i,j]=img[i+x,j+y]
-  img2[i+x,j]=img[i,j+y]
-  img2[i,j+y]=img[i+x,j]
-  img2[i+x,j+y]=img[i,j]
-  
-   
-
-cv.imshow("Imagem modificada", img2)
-cv.imshow("img", img)
-cv.waitKey(0)
-```
-
-<div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Serializa%C3%A7%C3%A3o%20de%20dados%20em%20ponto%20flutuante%20via%20FileStorage/filestorage.png">
 </div>
