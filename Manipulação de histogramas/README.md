@@ -1,78 +1,187 @@
-# 2.2. Exercícios
+# 6.2. Exercícios
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [regions.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.py). Esse programa deverá solicitar ao usuário as coordenadas de dois pontos P1
- e P2
- localizados dentro dos limites do tamanho da imagem e exibir que lhe for fornecida. Entretanto, a região definida pelo retângulo de vértices opostos definidos pelos pontos P1
- e P2
- será exibida com o negativo da imagem na região correspondente.
+◉Utilizando o programa exemplos/histogram.cpp como referência, implemente um programa equalize.py. Este deverá, para cada imagem capturada, realizar a equalização do histogram antes de exibir a imagem. Teste sua implementação apontando a câmera para ambientes com iluminações variadas e observando o efeito gerado. Assuma que as imagens processadas serão em tons de cinza.
  
- # Regions.py
+ # [equalize.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipula%C3%A7%C3%A3o%20de%20histogramas/equalize.py)
 ```
-import cv2 as cv
+import cv2
 import numpy as np
 
-img = cv.imread('pedro.jpg')
+def main():
+    cap = cv2.VideoCapture(0)
+    
+    if not cap.isOpened():
+        print("Câmera indisponível")
+        return -1
+    
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    print("largura =", width)
+    print("altura =", height)
+    
+    nbins = 64
+    range_ = [0, 256]
+    histrange = [range_]
+    uniform = True
+    accumulate = False
+    
+    histw = nbins
+    histh = int(nbins / 2)
+    histImgR = np.zeros((histh, histw, 3), dtype=np.uint8)
+    histImgG = np.zeros((histh, histw, 3), dtype=np.uint8)
+    histImgB = np.zeros((histh, histw, 3), dtype=np.uint8)
+    
+    while True:
+        ret, image = cap.read()
+        
+        if not ret:
+            print("Erro ao capturar o quadro")
+            break
+        
+        planes = cv2.split(image)
+        
+        # Equalizar o histograma para cada canal de cor
+        eq_planes = []
+        for plane in planes:
+            eq_plane = cv2.equalizeHist(plane)
+            eq_planes.append(eq_plane)
+        
+        histB = cv2.calcHist([eq_planes[0]], [0], None, [nbins], range_, accumulate=accumulate)
+        histG = cv2.calcHist([eq_planes[1]], [0], None, [nbins], range_, accumulate=accumulate)
+        histR = cv2.calcHist([eq_planes[2]], [0], None, [nbins], range_, accumulate=accumulate)
+        
+        cv2.normalize(histR, histR, 0, histImgR.shape[0], cv2.NORM_MINMAX, -1)
+        cv2.normalize(histG, histG, 0, histImgG.shape[0], cv2.NORM_MINMAX, -1)
+        cv2.normalize(histB, histB, 0, histImgB.shape[0], cv2.NORM_MINMAX, -1)
+        
+        histImgR.fill(0)
+        histImgG.fill(0)
+        histImgB.fill(0)
+        
+        for i in range(nbins):
+            cv2.line(histImgR, (i, histh), (i, histh - int(histR[i])), (0, 0, 255), 1, 8, 0)
+            cv2.line(histImgG, (i, histh), (i, histh - int(histG[i])), (0, 255, 0), 1, 8, 0)
+            cv2.line(histImgB, (i, histh), (i, histh - int(histB[i])), (255, 0, 0), 1, 8, 0)
+        
+        image[0:histh, 0:nbins] = histImgR
+        image[histh:2*histh, 0:nbins] = histImgG
+        image[2*histh:3*histh, 0:nbins] = histImgB
+        
+        cv2.imshow("image", image)
+        key = cv2.waitKey(30)
+        if key == 27:
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
 
-altura, largura = img.shape[:2] 
+if __name__ == "__main__":
+    main()
 
-x1=int(input("valor entre 0 e %d de x1 "% (altura)))
-y1=int(input("valor entre 0 e %d de y1 "% (largura)))
-x2=int(input("valor entre 0 e %d de x2 "% (altura)))
-y2=int(input("valor entre 0 e %d de y2 "% (largura)))
 
-for i in range(x1, x2): #percorre linhas
- for j in range(y1, y2): #percorre colunas
-  pixel = img[i,j]
-
-  pixel[0] = 255 - pixel[0]
-  pixel[1] = 255 - pixel[1]
-  pixel[2] = 255 - pixel[2]
-
-  pixel = img
-  
-
-# Convertendo para negativo
-#gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#cv.imshow('Gray', 255-gray)
-cv.imshow("Imagem modificada", img)
-cv.waitKey(0)
+    #Este código captura os quadros da câmera, 
+    # converte cada quadro para tons de cinza usando cv2.cvtColor, 
+    # em seguida, aplica a equalização do histograma usando 
+    # cv2.equalizeHist e exibe a imagem resultante. Certifique-se 
+    # de ter o OpenCV instalado corretamente e execute o código 
+    # para observar o efeito da equalização do histograma em diferentes 
+    # ambientes com iluminações variadas.
 ```
-
+Sem equalização
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipula%C3%A7%C3%A3o%20de%20histogramas/sem%20equaliza%C3%A7%C3%A3o.png">
+</div>
+Com equalização 
+<div align="center" >
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipula%C3%A7%C3%A3o%20de%20histogramas/equaliza%C3%A7%C3%A3o%20do%20histogram.png">
 </div>
 
+◉Utilizando o programa exemplos/histogram.cpp como referência, implemente um programa motiondetector.py. Este deverá continuamente calcular o histograma da imagem (apenas uma componente de cor é suficiente) e compará-lo com o último histograma calculado. Quando a diferença entre estes ultrapassar um limiar pré-estabelecido, ative um alarme. Utilize uma função de comparação que julgar conveniente.
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [trocaregioes.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.py). Seu programa deverá trocar os quadrantes em diagonal na imagem. Explore o uso da classe Mat e seus construtores para criar as regiões que serão trocadas.
-
-# trocaregioes.py
+# [motiondetector.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipula%C3%A7%C3%A3o%20de%20histogramas/motiondetector.py)
 ```
-import cv2 as cv
+import cv2
 import numpy as np
 
-img = cv.imread('pedro.jpg')
-img2 = cv.imread('pedro.jpg')
+def histogram_difference(hist1, hist2):
+    # Função para calcular a diferença entre dois histogramas
+    return cv2.compareHist(hist1, hist2, cv2.HISTCMP_CHISQR)
 
-altura, largura = img.shape[:2] 
+def main():
+    cap = cv2.VideoCapture(0)
+    
+    if not cap.isOpened():
+        print("Câmera indisponível")
+        return -1
+    
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    print("largura =", width)
+    print("altura =", height)
+    
+    nbins = 64
+    range_ = [0, 256]
+    histrange = [range_]
+    uniform = True
+    accumulate = False
+    
+    hist_last = None
+    threshold = 0.5
+    
+    while True:
+        ret, frame = cap.read()
+        
+        if not ret:
+            print("Erro ao capturar o quadro")
+            break
+        
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        hist = cv2.calcHist([gray], [0], None, [nbins], range_, accumulate=accumulate)
+        
+        if hist_last is not None:
+            difference = histogram_difference(hist, hist_last)
+            
+            if difference > threshold:
+                cv2.putText(frame, "ALERTA! Movimento detectado", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        
+        hist_last = hist
+        
+        cv2.imshow("image", frame)
+        key = cv2.waitKey(30)
+        if key == 27:
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
 
-x= int(altura-(altura/2))
-y =int( largura -(largura/2))
-print(x,y)
+if __name__ == "__main__":
+    main()
 
-for i in range(0, x): #percorre linhas
- for j in range(0, y): #percorre colunas
-  img2[i,j]=img[i+x,j+y]
-  img2[i+x,j]=img[i,j+y]
-  img2[i,j+y]=img[i+x,j]
-  img2[i+x,j+y]=img[i,j]
-  
-   
 
-cv.imshow("Imagem modificada", img2)
-cv.imshow("img", img)
-cv.waitKey(0)
+#Neste código, adicionamos a função histogram_difference para calcular 
+# a diferença entre dois histogramas usando cv2.compareHist. Durante o 
+# loop principal, calculamos continuamente o histograma de uma 
+# componente de cor da imagem (convertida para tons de cinza) e 
+# comparamos com o último histograma calculado. Se a diferença entre 
+# os histogramas ultrapassar o limiar especificado, um alarme é ativado.
+# Certifique-se de ter o OpenCV instalado corretamente e execute o 
+# código para observar o alarme sendo ativado quando ocorrer uma 
+# diferença significativa no histograma.
 ```
 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipula%C3%A7%C3%A3o%20de%20histogramas/semmovimento.png">
+</div>
+
+<div align="center" >
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipula%C3%A7%C3%A3o%20de%20histogramas/movimentodetectado.png">
 </div>
