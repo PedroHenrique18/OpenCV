@@ -1,78 +1,92 @@
-# 2.2. Exercícios
+# 5.2. Exercícios
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [regions.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.py). Esse programa deverá solicitar ao usuário as coordenadas de dois pontos P1
- e P2
- localizados dentro dos limites do tamanho da imagem e exibir que lhe for fornecida. Entretanto, a região definida pelo retângulo de vértices opostos definidos pelos pontos P1
- e P2
- será exibida com o negativo da imagem na região correspondente.
+◉Observando-se o programa labeling.cpp como exemplo, é possível verificar que caso existam mais de 255 objetos na cena, o processo de rotulação poderá ficar comprometido. Identifique a situação em que isso ocorre e proponha uma solução para este problema.
+
+◉Aprimore o algoritmo de contagem apresentado para identificar regiões com ou sem buracos internos que existam na cena. Assuma que objetos com mais de um buraco podem existir. Inclua suporte no seu algoritmo para não contar bolhas que tocam as bordas da imagem. Não se pode presumir, a priori, que elas tenham buracos ou não.
  
- # Regions.py
+ # [labeling.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Preenchendo%20regi%C3%B5es/labeling.py)
 ```
-import cv2 as cv
-import numpy as np
+import cv2
+import sys
 
-img = cv.imread('pedro.jpg')
+def main():
+    image = cv2.imread(sys.argv[1], cv2.IMREAD_GRAYSCALE)
 
-altura, largura = img.shape[:2] 
+    if image is None:
+        print("imagem nao carregou corretamente")
+        return -1
 
-x1=int(input("valor entre 0 e %d de x1 "% (altura)))
-y1=int(input("valor entre 0 e %d de y1 "% (largura)))
-x2=int(input("valor entre 0 e %d de x2 "% (altura)))
-y2=int(input("valor entre 0 e %d de y2 "% (largura)))
+    width = image.shape[1]
+    height = image.shape[0]
+    print(f"{width}x{height}")
 
-for i in range(x1, x2): #percorre linhas
- for j in range(y1, y2): #percorre colunas
-  pixel = img[i,j]
+    p = (0, 0)
 
-  pixel[0] = 255 - pixel[0]
-  pixel[1] = 255 - pixel[1]
-  pixel[2] = 255 - pixel[2]
+    for i in range(height):
+        if image[i, width-1] == 255 :
+            p = (width-1,i)
+            cv2.floodFill(image, None, p, 0)
+        if image[i, 0] == 255 :
+            p = (0,i)
+            cv2.floodFill(image, None, p, 0)
+            
+    for j in range(width):
+        if image[height-1, j] == 255 :
+            p = (j,height-1)
+            cv2.floodFill(image, None, p, 0)
+        if image[0,j] == 255 :
+            p = (j,0)
+            cv2.floodFill(image, None, p, 0)
 
-  pixel = img
-  
 
-# Convertendo para negativo
-#gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#cv.imshow('Gray', 255-gray)
-cv.imshow("Imagem modificada", img)
-cv.waitKey(0)
+    # busca objetos presentes
+    nobjects = 0
+    for i in range(height):
+        for j in range(width):
+            if image[i, j] == 255 :
+                # achou um objeto
+                nobjects += 1
+                # para o floodfill as coordenadas
+                # x e y são trocadas.
+                p = (j, i)
+                # preenche o objeto com o contador
+                cv2.floodFill(image, None, p, nobjects)
+
+
+    contours, hierarchy = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    bjects = 0
+    for i in range(len(contours)):
+        if hierarchy[0, i, 3] == -1:
+            # O contorno não possui contornos internos
+            # Verifica se há contornos externos para determinar se há um furo
+            has_external_contour = hierarchy[0, i, 2] != -1
+            if has_external_contour:
+                # O objeto tem um furo
+                bjects += 1
+
+    print("A figura tem", nobjects, "objetos ",bjects," com furos e" ,nobjects-bjects, "sem furos")
+    cv2.imshow("image", image)
+    cv2.imwrite("labeling.png", image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
+
 ```
 
+Imagem usada
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Preenchendo%20regi%C3%B5es/bolhas.png">
 </div>
 
-
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [trocaregioes.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.py). Seu programa deverá trocar os quadrantes em diagonal na imagem. Explore o uso da classe Mat e seus construtores para criar as regiões que serão trocadas.
-
-# trocaregioes.py
-```
-import cv2 as cv
-import numpy as np
-
-img = cv.imread('pedro.jpg')
-img2 = cv.imread('pedro.jpg')
-
-altura, largura = img.shape[:2] 
-
-x= int(altura-(altura/2))
-y =int( largura -(largura/2))
-print(x,y)
-
-for i in range(0, x): #percorre linhas
- for j in range(0, y): #percorre colunas
-  img2[i,j]=img[i+x,j+y]
-  img2[i+x,j]=img[i,j+y]
-  img2[i,j+y]=img[i+x,j]
-  img2[i+x,j+y]=img[i,j]
-  
-   
-
-cv.imshow("Imagem modificada", img2)
-cv.imshow("img", img)
-cv.waitKey(0)
-```
-
+Imagem após 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Preenchendo%20regi%C3%B5es/labeling.png">
+</div>
+
+Saida do console 
+<div align="center" >
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Preenchendo%20regi%C3%B5es/resultado.png">
 </div>
