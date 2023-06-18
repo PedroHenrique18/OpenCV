@@ -1,78 +1,162 @@
-# 2.2. Exercícios
+# 8.1. Exercícios
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [regions.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.py). Esse programa deverá solicitar ao usuário as coordenadas de dois pontos P1
- e P2
- localizados dentro dos limites do tamanho da imagem e exibir que lhe for fornecida. Entretanto, a região definida pelo retângulo de vértices opostos definidos pelos pontos P1
- e P2
- será exibida com o negativo da imagem na região correspondente.
+◉Utilizando o programa exemplos/addweighted.cpp como referência, implemente um programa tiltshift.py. Três ajustes deverão ser providos na tela da interface:
+
+um ajuste para regular a altura da região central que entrará em foco;
+
+um ajuste para regular a força de decaimento da região borrada;
+
+um ajuste para regular a posição vertical do centro da região que entrará em foco. Finalizado o programa, a imagem produzida deverá ser salva em arquivo.
+
+
  
- # Regions.py
+ # [tiltshift.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20no%20dom%C3%ADnio%20espacial%20II/tiltshift.py)
 ```
-import cv2 as cv
-import numpy as np
+import cv2
 
-img = cv.imread('pedro.jpg')
+def on_trackbar_blend(val):
+    global alpha
+    alpha = val / alpha_slider_max
+    blended = cv2.addWeighted(image1, 1-alpha, imageTop, alpha, 0.0)
+    cv2.imshow("addweighted", blended)
 
-altura, largura = img.shape[:2] 
+def on_trackbar_line(val):
+    global imageTop
+    imageTop = image2.copy()
+    limit = int(val * image_height / top_slider_max)
+    if limit > 0:
+        alpha = limit / image_height
+        cv2.addWeighted(image2[0:limit, :], alpha, image1[0:limit, :], 1-alpha, 0, imageTop[0:limit, :])
+    on_trackbar_blend(alfa_slider)
 
-x1=int(input("valor entre 0 e %d de x1 "% (altura)))
-y1=int(input("valor entre 0 e %d de y1 "% (largura)))
-x2=int(input("valor entre 0 e %d de x2 "% (altura)))
-y2=int(input("valor entre 0 e %d de y2 "% (largura)))
+def on_trackbar_height(val):
+    global image_height
+    image_height = int(val * image1.shape[0] / height_slider_max)
+    on_trackbar_line(top_slider)
 
-for i in range(x1, x2): #percorre linhas
- for j in range(y1, y2): #percorre colunas
-  pixel = img[i,j]
+def on_trackbar_decay(val):
+    global alpha_slider_max
+    alpha_slider_max = val
+    on_trackbar_blend(alfa_slider)
 
-  pixel[0] = 255 - pixel[0]
-  pixel[1] = 255 - pixel[1]
-  pixel[2] = 255 - pixel[2]
+def on_trackbar_position(val):
+    global top_slider_max
+    top_slider_max = val
+    on_trackbar_line(top_slider)
 
-  pixel = img
-  
+alfa = 0.0
+alfa_slider = 0
+alfa_slider_max = 100
+top_slider = 0
+top_slider_max = 100
+height_slider = 0
+height_slider_max = 100
+alpha_slider_max = 255
 
-# Convertendo para negativo
-#gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#cv.imshow('Gray', 255-gray)
-cv.imshow("Imagem modificada", img)
-cv.waitKey(0)
+image1 = cv2.imread("blend1.jpg")
+image2 = cv2.imread("blend2.jpg")
+imageTop = image2.copy()
+image_height = image1.shape[0]
+
+cv2.namedWindow("addweighted")
+
+cv2.createTrackbar("Alpha x {}".format(alfa_slider_max), "addweighted", alfa_slider, alfa_slider_max, on_trackbar_blend)
+cv2.createTrackbar("Scanline x {}".format(top_slider_max), "addweighted", top_slider, top_slider_max, on_trackbar_line)
+cv2.createTrackbar("Height x {}".format(height_slider_max), "addweighted", height_slider, height_slider_max, on_trackbar_height)
+cv2.createTrackbar("Decay x {}".format(alpha_slider_max), "addweighted", alpha_slider_max, 255, on_trackbar_decay)
+cv2.createTrackbar("Position x {}".format(top_slider_max), "addweighted", top_slider_max, 100, on_trackbar_position)
+
+on_trackbar_blend(alfa_slider)
+on_trackbar_line(top_slider)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+# Salvar imagem produzida em arquivo
+blended_filename = "blended_image.jpg"
+cv2.imwrite(blended_filename, imageTop)
+print("Imagem produzida salva como", blended_filename)
 ```
 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20no%20dom%C3%ADnio%20espacial%20II/tiltshift.png">
 </div>
 
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [trocaregioes.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.py). Seu programa deverá trocar os quadrantes em diagonal na imagem. Explore o uso da classe Mat e seus construtores para criar as regiões que serão trocadas.
+◉Utilizando o programa exemplos/addweighted.cpp como referência, implemente um programa tiltshiftvideo.py. Tal programa deverá ser capaz de processar um arquivo de vídeo, produzir o efeito de tilt-shift nos quadros presentes e escrever o resultado em outro arquivo de vídeo. A ideia é criar um efeito de miniaturização de cenas. Descarte quadros em uma taxa que julgar conveniente para evidenciar o efeito de stop motion, comum em vídeos desse tipo.
 
 # trocaregioes.py
 ```
-import cv2 as cv
+import cv2
 import numpy as np
 
-img = cv.imread('pedro.jpg')
-img2 = cv.imread('pedro.jpg')
+def apply_tilt_shift(frame):
+    # Obter as dimensões do quadro
+    height, width = frame.shape[:2]
 
-altura, largura = img.shape[:2] 
+    # Definir a proporção da região de foco
+    focus_ratio = 0.4
 
-x= int(altura-(altura/2))
-y =int( largura -(largura/2))
-print(x,y)
+    # Definir as regiões superior e inferior a serem desfocadas
+    top_region = int(height * focus_ratio)
+    bottom_region = int(height * (1 - focus_ratio))
 
-for i in range(0, x): #percorre linhas
- for j in range(0, y): #percorre colunas
-  img2[i,j]=img[i+x,j+y]
-  img2[i+x,j]=img[i,j+y]
-  img2[i,j+y]=img[i+x,j]
-  img2[i+x,j+y]=img[i,j]
-  
-   
+    # Aplicar desfoque às regiões superior e inferior
+    blurred_frame = frame.copy()
+    blurred_frame[:top_region, :] = cv2.GaussianBlur(frame[:top_region, :], (0, 0), sigmaX=30)
+    blurred_frame[bottom_region:, :] = cv2.GaussianBlur(frame[bottom_region:, :], (0, 0), sigmaX=30)
 
-cv.imshow("Imagem modificada", img2)
-cv.imshow("img", img)
-cv.waitKey(0)
+    # Mesclar o quadro original com o quadro desfocado
+    processed_frame = cv2.addWeighted(frame, 1.0, blurred_frame, 0.8, 0)
+
+    return processed_frame
+
+def process_video(input_file, output_file, discard_rate):
+    # Abrir o arquivo de vídeo de entrada
+    video_capture = cv2.VideoCapture(input_file)
+
+    # Obter as dimensões do vídeo de entrada
+    width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = video_capture.get(cv2.CAP_PROP_FPS)
+
+    # Criar o objeto para escrever o arquivo de vídeo de saída
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec de vídeo para o arquivo de saída
+    video_writer = cv2.VideoWriter(output_file, fourcc, fps, (width, height))
+
+    frame_count = 0
+
+    while True:
+        # Ler o próximo quadro do vídeo de entrada
+        ret, frame = video_capture.read()
+
+        if not ret:
+            break
+
+        frame_count += 1
+
+        # Descartar quadros com base na taxa de descarte
+        if frame_count % discard_rate != 0:
+            continue
+
+        # Aplicar o efeito de tilt-shift no quadro
+        processed_frame = apply_tilt_shift(frame)
+
+        # Escrever o quadro processado no arquivo de vídeo de saída
+        video_writer.write(processed_frame)
+
+    # Liberar os recursos
+    video_capture.release()
+    video_writer.release()
+
+input_file = "meuvideo.mp4"
+output_file = "output_video.mp4"
+discard_rate = 2  # Taxa de descarte de quadros (descartar a cada 2 quadros)
+
+process_video(input_file, output_file, discard_rate)
+
 ```
 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20no%20dom%C3%ADnio%20espacial%20II/output_gif.gif">
 </div>
