@@ -19,9 +19,18 @@ Os exercícios realizados durante a disciplina abordam uma variedade de tópicos
 # Requisitos
 Certifique-se de ter os seguintes requisitos atendidos antes de executar os programas deste repositório:
 
-Python 3.10.7 (\n)
-OpenCV (versão 4.7.0)
+-Python 3.10.7
+-OpenCV (versão 4.7.0)
 
+## Executando os programas
+
+Siga as etapas abaixo para executar os programas em seu ambiente:
+
+1. Clone este repositório em sua máquina local.
+2. Certifique-se de ter o Python instalado corretamente.
+3. Instale as dependências necessárias, incluindo o OpenCV.
+4. Navegue até a pasta do programa desejado.
+5. Execute o programa utilizando o comando `python nome_do_programa.py`.
 
 <div align="center">
   <small>Pedro Henrique Bezerra Fernandes - 2023</small>
