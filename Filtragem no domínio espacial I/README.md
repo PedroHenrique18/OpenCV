@@ -1,78 +1,116 @@
-# 2.2. Exercícios
+# 7.2. Exercícios
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [regions.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.py). Esse programa deverá solicitar ao usuário as coordenadas de dois pontos P1
- e P2
- localizados dentro dos limites do tamanho da imagem e exibir que lhe for fornecida. Entretanto, a região definida pelo retângulo de vértices opostos definidos pelos pontos P1
- e P2
- será exibida com o negativo da imagem na região correspondente.
+◉Utilizando o programa exemplos/filtroespacial.cpp como referência, implemente um programa laplgauss.py. O programa deverá acrescentar mais uma funcionalidade ao exemplo fornecido, permitindo que seja calculado o laplaciano do gaussiano das imagens capturadas. Compare o resultado desse filtro com a simples aplicação do filtro laplaciano.
  
- # Regions.py
+ # [laplgauss.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20no%20dom%C3%ADnio%20espacial%20I/laplgauss.py)
 ```
-import cv2 as cv
+import cv2
 import numpy as np
 
-img = cv.imread('pedro.jpg')
+def printmask(m):
+    for i in range(m.shape[0]):
+        for j in range(m.shape[1]):
+            print(m[i, j], end=",")
+        print("\n")
 
-altura, largura = img.shape[:2] 
+cap = cv2.VideoCapture(0)  # open the default camera
 
-x1=int(input("valor entre 0 e %d de x1 "% (altura)))
-y1=int(input("valor entre 0 e %d de y1 "% (largura)))
-x2=int(input("valor entre 0 e %d de x2 "% (altura)))
-y2=int(input("valor entre 0 e %d de y2 "% (largura)))
+if not cap.isOpened():  # check if we succeeded
+    exit(-1)
 
-for i in range(x1, x2): #percorre linhas
- for j in range(y1, y2): #percorre colunas
-  pixel = img[i,j]
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-  pixel[0] = 255 - pixel[0]
-  pixel[1] = 255 - pixel[1]
-  pixel[2] = 255 - pixel[2]
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+print("largura =", width)
+print("altura =", height)
+print("fps =", cap.get(cv2.CAP_PROP_FPS))
+print("format =", cap.get(cv2.CAP_PROP_FORMAT))
 
-  pixel = img
-  
+cv2.namedWindow("filtroespacial", cv2.WINDOW_NORMAL)
+cv2.namedWindow("original", cv2.WINDOW_NORMAL)
 
-# Convertendo para negativo
-#gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#cv.imshow('Gray', 255-gray)
-cv.imshow("Imagem modificada", img)
-cv.waitKey(0)
+media = np.array([0.1111, 0.1111, 0.1111, 0.1111, 0.1111, 0.1111, 0.1111, 0.1111, 0.1111], dtype=np.float32)
+gauss = np.array([0.0625, 0.125, 0.0625, 0.125, 0.25, 0.125, 0.0625, 0.125, 0.0625], dtype=np.float32)
+horizontal = np.array([-1, 0, 1, -2, 0, 2, -1, 0, 1], dtype=np.float32)
+vertical = np.array([-1, -2, -1, 0, 0, 0, 1, 2, 1], dtype=np.float32)
+laplacian = np.array([0, -1, 0, -1, 4, -1, 0, -1, 0], dtype=np.float32)
+boost = np.array([0, -1, 0, -1, 5.2, -1, 0, -1, 0], dtype=np.float32)
+
+mask = np.zeros((3, 3), dtype=np.float32)
+result_laplacian = np.zeros((height, width), dtype=np.uint8)
+result_laplacian_of_gaussian = np.zeros((height, width), dtype=np.uint8)
+
+absolut = 1  # calcs abs of the image
+
+while True:
+    ret, frame = cap.read()  # get a new frame from camera
+    
+    if not ret:
+        print("Erro ao capturar o quadro")
+        break
+    
+    framegray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    framegray = cv2.flip(framegray, 1)
+    
+    cv2.imshow("original", framegray)
+    
+    frame32f = framegray.astype(np.float32)
+    
+    # Laplaciano
+    frameFiltered_laplacian = cv2.filter2D(frame32f, -1, laplacian, borderType=cv2.BORDER_CONSTANT)
+    if absolut:
+        frameFiltered_laplacian = np.abs(frameFiltered_laplacian)
+    
+    frameFiltered_laplacian = frameFiltered_laplacian.astype(np.uint8)
+    
+    cv2.imshow("filtroespacial", frameFiltered_laplacian)
+    
+    # Laplaciano do Gaussiano
+    frameFiltered_log = cv2.GaussianBlur(frame32f, (3, 3), 0)
+    frameFiltered_log = cv2.filter2D(frameFiltered_log, -1, laplacian, borderType=cv2.BORDER_CONSTANT)
+    if absolut:
+        frameFiltered_log = np.abs(frameFiltered_log)
+    
+    frameFiltered_log = frameFiltered_log.astype(np.uint8)
+    
+    cv2.imshow("filtroespacial_log", frameFiltered_log)
+    
+    key = cv2.waitKey(10)
+    
+    if key == 27:
+        break  # esc pressed!
+    elif key == ord('a'):
+        absolut = not absolut
+    elif key == ord('m'):
+        mask = media.reshape((3, 3))
+        printmask(mask)
+    elif key == ord('g'):
+        mask = gauss.reshape((3, 3))
+        printmask(mask)
+    elif key == ord('h'):
+        mask = horizontal.reshape((3, 3))
+        printmask(mask)
+    elif key == ord('v'):
+        mask = vertical.reshape((3, 3))
+        printmask(mask)
+    elif key == ord('l'):
+        mask = laplacian.reshape((3, 3))
+        printmask(mask)
+    elif key == ord('b'):
+        mask = boost.reshape((3, 3))
+    
+cap.release()
+cv2.destroyAllWindows()
+
+
+#Neste código, utilizamos a função cv2.GaussianBlur() para aplicar o 
+# filtro Gaussiano antes de realizar a convolução com o filtro 
+# laplaciano. O resultado é comparado com a aplicação simples do 
+# filtro laplaciano.
 ```
 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.png">
-</div>
-
-
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [trocaregioes.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.py). Seu programa deverá trocar os quadrantes em diagonal na imagem. Explore o uso da classe Mat e seus construtores para criar as regiões que serão trocadas.
-
-# trocaregioes.py
-```
-import cv2 as cv
-import numpy as np
-
-img = cv.imread('pedro.jpg')
-img2 = cv.imread('pedro.jpg')
-
-altura, largura = img.shape[:2] 
-
-x= int(altura-(altura/2))
-y =int( largura -(largura/2))
-print(x,y)
-
-for i in range(0, x): #percorre linhas
- for j in range(0, y): #percorre colunas
-  img2[i,j]=img[i+x,j+y]
-  img2[i+x,j]=img[i,j+y]
-  img2[i,j+y]=img[i+x,j]
-  img2[i+x,j+y]=img[i,j]
-  
-   
-
-cv.imshow("Imagem modificada", img2)
-cv.imshow("img", img)
-cv.waitKey(0)
-```
-
-<div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20no%20dom%C3%ADnio%20espacial%20I/laplgauss.png">
 </div>
