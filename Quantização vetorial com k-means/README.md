@@ -1,78 +1,86 @@
-# 2.2. Exercícios
+# 12.2. Exercícios
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [regions.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.py). Esse programa deverá solicitar ao usuário as coordenadas de dois pontos P1
- e P2
- localizados dentro dos limites do tamanho da imagem e exibir que lhe for fornecida. Entretanto, a região definida pelo retângulo de vértices opostos definidos pelos pontos P1
- e P2
- será exibida com o negativo da imagem na região correspondente.
+◉Utilizando o programa kmeans.cpp como exemplo prepare um programa exemplo onde a execução do código se dê usando o parâmetro nRodadas=1 e inciar os centros de forma aleatória usando o parâmetro KMEANS_RANDOM_CENTERS ao invés de KMEANS_PP_CENTERS. Realize 10 rodadas diferentes do algoritmo e compare as imagens produzidas. Explique porque elas podem diferir tanto.
  
- # Regions.py
+ # [kmeans.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Quantiza%C3%A7%C3%A3o%20vetorial%20com%20k-means/kmeans.py)
 ```
-import cv2 as cv
+import cv2
+import sys
 import numpy as np
 
-img = cv.imread('pedro.jpg')
+def run_kmeans(image_path, output_prefix):
+    img = cv2.imread(image_path)
 
-altura, largura = img.shape[:2] 
+    if img is None:
+        print(f"Erro ao abrir a imagem: {image_path}")
+        return
 
-x1=int(input("valor entre 0 e %d de x1 "% (altura)))
-y1=int(input("valor entre 0 e %d de y1 "% (largura)))
-x2=int(input("valor entre 0 e %d de x2 "% (altura)))
-y2=int(input("valor entre 0 e %d de y2 "% (largura)))
+    samples = img.reshape(-1, 3).astype(np.float32)
 
-for i in range(x1, x2): #percorre linhas
- for j in range(y1, y2): #percorre colunas
-  pixel = img[i,j]
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10000, 0.0001)
+    flags = cv2.KMEANS_RANDOM_CENTERS
+    n_rounds = 10
 
-  pixel[0] = 255 - pixel[0]
-  pixel[1] = 255 - pixel[1]
-  pixel[2] = 255 - pixel[2]
+    for i in range(n_rounds):
+        _, labels, centers = cv2.kmeans(samples, 8, None, criteria, 1, flags)
 
-  pixel = img
-  
+        segmented_image = centers[labels.flatten()].reshape(img.shape)
+        output_filename = f"{output_prefix}_{i+1}.jpg"
+        cv2.imwrite(output_filename, segmented_image)
 
-# Convertendo para negativo
-#gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#cv.imshow('Gray', 255-gray)
-cv.imshow("Imagem modificada", img)
-cv.waitKey(0)
+    print("Processamento concluído.")
+
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        print("Uso: python kmeans.py <caminho_imagem> <prefixo_saida>")
+        sys.exit()
+
+    image_path = sys.argv[1]
+    output_prefix = sys.argv[2]
+
+    run_kmeans(image_path, output_prefix)
+
+
+
+
+
+#As diferentes imagens produzidas em cada rodada do algoritmo K-means
+#  podem diferir bastante devido a dois fatores principais: inicialização
+#  aleatória dos centros e sensibilidade a valores iniciais.
+
+#Inicialização aleatória dos centros: O algoritmo K-means inicia os 
+# centros de cluster de forma aleatória em cada rodada. Isso significa
+#  que a posição inicial dos centros pode variar de uma execução para 
+# outra. Como o algoritmo busca convergir para uma solução ótima, as 
+# diferentes posições iniciais dos centros podem levar a diferentes 
+# agrupamentos. Dependendo da inicialização aleatória, os centros podem
+#  ser posicionados em regiões diferentes do espaço de características,
+#  resultando em diferentes agrupamentos finais.
+
+#Sensibilidade a valores iniciais: O algoritmo K-means é sensível aos 
+# valores iniciais dos centros. Pequenas alterações na posição inicial 
+# dos centros podem levar a diferentes iterações e agrupamentos finais. 
+# Isso ocorre porque o algoritmo segue um processo iterativo para 
+# atualizar os centros e as atribuições dos pontos aos clusters. 
+# Se os centros iniciais estiverem próximos de alguns pontos específicos,
+#  esses pontos podem ser atraídos para um cluster específico, 
+# influenciando o resultado final. Portanto, diferentes valores iniciais
+#  podem levar a diferentes resultados finais.
+
+#Esses fatores combinados fazem com que as imagens segmentadas variem 
+# em cada rodada do algoritmo K-means. A inicialização aleatória e a 
+# sensibilidade a valores iniciais resultam em diferentes posições dos 
+# centros e diferentes atribuições de pontos aos clusters, o que leva 
+# a diferentes agrupamentos e, consequentemente, a diferentes imagens 
+# segmentadas.
+
 ```
-
+•Imagem utilizada
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Quantiza%C3%A7%C3%A3o%20vetorial%20com%20k-means/sushi.png">
 </div>
 
-
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [trocaregioes.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.py). Seu programa deverá trocar os quadrantes em diagonal na imagem. Explore o uso da classe Mat e seus construtores para criar as regiões que serão trocadas.
-
-# trocaregioes.py
-```
-import cv2 as cv
-import numpy as np
-
-img = cv.imread('pedro.jpg')
-img2 = cv.imread('pedro.jpg')
-
-altura, largura = img.shape[:2] 
-
-x= int(altura-(altura/2))
-y =int( largura -(largura/2))
-print(x,y)
-
-for i in range(0, x): #percorre linhas
- for j in range(0, y): #percorre colunas
-  img2[i,j]=img[i+x,j+y]
-  img2[i+x,j]=img[i,j+y]
-  img2[i,j+y]=img[i+x,j]
-  img2[i+x,j+y]=img[i,j]
-  
-   
-
-cv.imshow("Imagem modificada", img2)
-cv.imshow("img", img)
-cv.waitKey(0)
-```
-
+•Saida com um GIF
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Quantiza%C3%A7%C3%A3o%20vetorial%20com%20k-means/saida_1.gif">
 </div>
