@@ -30,7 +30,7 @@ cv.waitKey(0)
 ```
 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Decomposi%C3%A7%C3%A3o%20de%20imagens%20em%20planos%20de%20bits/esteg_encode.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Decomposi%C3%A7%C3%A3o%20de%20imagens%20em%20planos%20de%20bits/sushi.png">
 </div>
 
 <div align="center" >
