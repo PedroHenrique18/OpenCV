@@ -19,7 +19,7 @@ Os exercícios realizados durante a disciplina abordam uma variedade de tópicos
 # Requisitos
 Certifique-se de ter os seguintes requisitos atendidos antes de executar os programas deste repositório:
 
-Python 3.10.7
+Python 3.10.7 (\n)
 OpenCV (versão 4.7.0)
 
 
