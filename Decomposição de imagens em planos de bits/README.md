@@ -1,4 +1,4 @@
-# 2.2. Exercícios
+# 4.3. Exercícios
 
 ◉Usando o programa esteg-encode.cpp como referência para esteganografia, escreva um programa [esteg-encode.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Decomposi%C3%A7%C3%A3o%20de%20imagens%20em%20planos%20de%20bits/esteg_encode.py) que recupere a imagem codificada de uma imagem resultante de esteganografia. Lembre-se que os bits menos significativos dos pixels da imagem fornecida deverão compor os bits mais significativos dos pixels da imagem recuperada. O programa deve receber como parâmetros de linha de comando o nome da imagem resultante da esteganografia
  
