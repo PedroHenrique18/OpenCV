@@ -1,78 +1,106 @@
-# 2.2. Exercícios
+# 10.2. Exercícios
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [regions.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.py). Esse programa deverá solicitar ao usuário as coordenadas de dois pontos P1
- e P2
- localizados dentro dos limites do tamanho da imagem e exibir que lhe for fornecida. Entretanto, a região definida pelo retângulo de vértices opostos definidos pelos pontos P1
- e P2
- será exibida com o negativo da imagem na região correspondente.
+◉Utilizando o programa exemplos/dftfilter.cpp como referência, implemente o filtro homomórfico para melhorar imagens com iluminação irregular. Crie uma cena mal iluminada e ajuste os parâmetros do filtro homomórfico para corrigir a iluminação da melhor forma possível. Assuma que a imagem fornecida é em tons de cinza.
  
- # Regions.py
+ # [dftfilter.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20no%20Dom%C3%ADnio%20da%20Frequ%C3%AAncia/dftfilter.py)
 ```
-import cv2 as cv
+import cv2
 import numpy as np
+import sys
 
-img = cv.imread('pedro.jpg')
+def swap_quadrants(image):
+    tmp = np.copy(image)
+    cx = image.shape[1] // 2
+    cy = image.shape[0] // 2
 
-altura, largura = img.shape[:2] 
+    # Swap quadrants (Top-Left with Bottom-Right)
+    tmp[:cy, :cx], image[cy:, cx:] = image[cy:, cx:], tmp[:cy, :cx].copy()
 
-x1=int(input("valor entre 0 e %d de x1 "% (altura)))
-y1=int(input("valor entre 0 e %d de y1 "% (largura)))
-x2=int(input("valor entre 0 e %d de x2 "% (altura)))
-y2=int(input("valor entre 0 e %d de y2 "% (largura)))
+    # Swap quadrant (Top-Right with Bottom-Left)
+    tmp[:cy, cx:], image[cy:, :cx] = image[cy:, :cx], tmp[:cy, cx:].copy()
 
-for i in range(x1, x2): #percorre linhas
- for j in range(y1, y2): #percorre colunas
-  pixel = img[i,j]
+def make_filter(image):
+    filter2D = np.zeros_like(image, dtype=np.float32)
+    centerX = image.shape[1] // 2
+    centerY = image.shape[0] // 2
+    radius = 20
 
-  pixel[0] = 255 - pixel[0]
-  pixel[1] = 255 - pixel[1]
-  pixel[2] = 255 - pixel[2]
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            if (i - centerY) ** 2 + (j - centerX) ** 2 <= radius ** 2:
+                filter2D[i, j] = 1
 
-  pixel = img
-  
+    return filter2D
 
-# Convertendo para negativo
-#gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#cv.imshow('Gray', 255-gray)
-cv.imshow("Imagem modificada", img)
-cv.waitKey(0)
+def homomorphic_filter(image, cutoff_freq, boost):
+    # Convert image to float32 for the subsequent calculations
+    image = image.astype(np.float32)
+
+    # Apply logarithmic transformation to enhance the dynamic range of the image
+    image_log = np.log1p(image)
+
+    # Perform the DFT on the log-transformed image
+    dft_M = cv2.getOptimalDFTSize(image_log.shape[0])
+    dft_N = cv2.getOptimalDFTSize(image_log.shape[1])
+    padded = cv2.copyMakeBorder(image_log, 0, dft_M - image_log.shape[0], 0, dft_N - image_log.shape[1], cv2.BORDER_CONSTANT, value=0)
+    complexImage = np.zeros((padded.shape[0], padded.shape[1], 2), dtype=np.float32)
+    complexImage[:, :, 0] = padded
+    complexImage = cv2.dft(complexImage)
+    swap_quadrants(complexImage)
+
+    # Create the homomorphic filter
+    filter = make_filter(image)
+    filter = (1 - boost) + boost * filter
+    filter = cv2.GaussianBlur(filter, (0, 0), cutoff_freq)
+    filter = np.clip(filter, 0.01, 1)
+
+    # Apply the homomorphic filter in the frequency domain
+    filtered_image = complexImage * np.expand_dims(filter, axis=2)
+
+    # Perform the inverse DFT
+    swap_quadrants(filtered_image)
+    filtered_image = cv2.idft(filtered_image)
+
+    # Separate the real and imaginary components
+    planos = cv2.split(filtered_image)
+
+    # Normalize and apply exponential minus one
+    min_value = np.min(planos[0])
+    max_value = np.max(planos[0])
+    result = (planos[0] - min_value) / (max_value - min_value)
+
+    return result
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Informe o caminho para a imagem de entrada.")
+        exit()
+
+    image = cv2.imread(sys.argv[1], cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        print("Erro ao abrir a imagem", sys.argv[1])
+        exit()
+
+    # Define the parameters for the homomorphic filter
+    cutoff_freq = 30
+    boost = 1.0
+
+    # Apply the homomorphic filter to the image
+    result = homomorphic_filter(image, cutoff_freq, boost)
+
+    # Display the resulting image
+    cv2.imshow("image", result)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 ```
 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20no%20Dom%C3%ADnio%20da%20Frequ%C3%AAncia/imagem%20mal%20iluminada.jpg">
 </div>
-
-
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [trocaregioes.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.py). Seu programa deverá trocar os quadrantes em diagonal na imagem. Explore o uso da classe Mat e seus construtores para criar as regiões que serão trocadas.
-
-# trocaregioes.py
-```
-import cv2 as cv
-import numpy as np
-
-img = cv.imread('pedro.jpg')
-img2 = cv.imread('pedro.jpg')
-
-altura, largura = img.shape[:2] 
-
-x= int(altura-(altura/2))
-y =int( largura -(largura/2))
-print(x,y)
-
-for i in range(0, x): #percorre linhas
- for j in range(0, y): #percorre colunas
-  img2[i,j]=img[i+x,j+y]
-  img2[i+x,j]=img[i,j+y]
-  img2[i,j+y]=img[i+x,j]
-  img2[i+x,j+y]=img[i,j]
-  
-   
-
-cv.imshow("Imagem modificada", img2)
-cv.imshow("img", img)
-cv.waitKey(0)
-```
 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20no%20Dom%C3%ADnio%20da%20Frequ%C3%AAncia/resultado.png">
 </div>
+
+
