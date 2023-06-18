@@ -1,78 +1,87 @@
-# 2.2. Exercícios
+# 13.2.  Exercícios
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [regions.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.py). Esse programa deverá solicitar ao usuário as coordenadas de dois pontos P1
- e P2
- localizados dentro dos limites do tamanho da imagem e exibir que lhe for fornecida. Entretanto, a região definida pelo retângulo de vértices opostos definidos pelos pontos P1
- e P2
- será exibida com o negativo da imagem na região correspondente.
+◉Usando o programa morfologia.cpp como referência, crie um programa que resolva o problema da pré-filtragem de forma para reconhecimento dos caracteres usando operações morfológicas. Você poderá usar as imagens digitos-1.png, digitos-2.png, digitos-3.png, digitos-4.png e digitos-5.png para testar seu programa. Cuidado para deixar o ponto decimal separado dos demais dígitos para evitar um reconhecimento errado do número no visor.
  
- # Regions.py
+ # [morfologia.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20de%20forma%20com%20morfologia%20matem%C3%A1tica/morfologia.py)
 ```
-import cv2 as cv
+import cv2
 import numpy as np
 
-img = cv.imread('pedro.jpg')
+def prefiltragem(imagem):
+    # Elemento estruturante
+    elemento_estruturante = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
 
-altura, largura = img.shape[:2] 
+    # Erosão
+    erosao = cv2.erode(imagem, elemento_estruturante)
 
-x1=int(input("valor entre 0 e %d de x1 "% (altura)))
-y1=int(input("valor entre 0 e %d de y1 "% (largura)))
-x2=int(input("valor entre 0 e %d de x2 "% (altura)))
-y2=int(input("valor entre 0 e %d de y2 "% (largura)))
+    # Dilatação
+    dilatacao = cv2.dilate(imagem, elemento_estruturante)
 
-for i in range(x1, x2): #percorre linhas
- for j in range(y1, y2): #percorre colunas
-  pixel = img[i,j]
+    # Abertura
+    abertura = cv2.morphologyEx(imagem, cv2.MORPH_OPEN, elemento_estruturante)
 
-  pixel[0] = 255 - pixel[0]
-  pixel[1] = 255 - pixel[1]
-  pixel[2] = 255 - pixel[2]
+    # Fechamento
+    fechamento = cv2.morphologyEx(imagem, cv2.MORPH_CLOSE, elemento_estruturante)
 
-  pixel = img
-  
+    # Abertura seguida de fechamento
+    abertfecha = cv2.morphologyEx(abertura, cv2.MORPH_CLOSE, elemento_estruturante)
 
-# Convertendo para negativo
-#gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-#cv.imshow('Gray', 255-gray)
-cv.imshow("Imagem modificada", img)
-cv.waitKey(0)
+    # Concatenar as imagens em uma única linha
+    imagens = np.hstack((erosao, dilatacao, abertura, fechamento, abertfecha))
+
+    return imagens
+
+# Carregar as imagens de teste
+imagens_teste = ['digitos-1.png', 'digitos-2.png', 'digitos-3.png', 'digitos-4.png', 'digitos-5.png']
+
+for imagem_teste in imagens_teste:
+    # Carregar a imagem
+    imagem = cv2.imread(imagem_teste, cv2.IMREAD_GRAYSCALE)
+
+    if imagem is None:
+        print(f"Erro ao carregar a imagem: {imagem_teste}")
+        continue
+
+    # Realizar a pré-filtragem
+    imagem_filtrada = prefiltragem(imagem)
+
+    # Exibir a imagem original e a imagem pré-filtrada
+    cv2.imshow("Imagem Original", imagem)
+    cv2.imshow("Imagem Pré-filtrada", imagem_filtrada)
+
+    cv2.waitKey(0)
+
+cv2.destroyAllWindows()
 ```
 
+•Digitos fornecidos 
 <div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/regions.png">
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20de%20forma%20com%20morfologia%20matem%C3%A1tica/digitos%20fornecidos.png">
+</div>
+
+•Digito 1 filtrado 
+<div align="center" >
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20de%20forma%20com%20morfologia%20matem%C3%A1tica/digito%201.png">
+</div>
+
+•Digito 2 filtrado 
+<div align="center" >
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20de%20forma%20com%20morfologia%20matem%C3%A1tica/digito%202.png">
+</div>
+
+•Digito 3 filtrado 
+<div align="center" >
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20de%20forma%20com%20morfologia%20matem%C3%A1tica/digito%203.png">
+</div>
+
+•Digito 4 filtrado 
+<div align="center" >
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20de%20forma%20com%20morfologia%20matem%C3%A1tica/digito%204.png">
+</div>
+
+•Digito 5 filtrado 
+<div align="center" >
+  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Filtragem%20de%20forma%20com%20morfologia%20matem%C3%A1tica/digito%205.png">
 </div>
 
 
-◉Utilizando o programa exemplos/pixels.cpp como referência, implemente um programa [trocaregioes.py](https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.py). Seu programa deverá trocar os quadrantes em diagonal na imagem. Explore o uso da classe Mat e seus construtores para criar as regiões que serão trocadas.
-
-# trocaregioes.py
-```
-import cv2 as cv
-import numpy as np
-
-img = cv.imread('pedro.jpg')
-img2 = cv.imread('pedro.jpg')
-
-altura, largura = img.shape[:2] 
-
-x= int(altura-(altura/2))
-y =int( largura -(largura/2))
-print(x,y)
-
-for i in range(0, x): #percorre linhas
- for j in range(0, y): #percorre colunas
-  img2[i,j]=img[i+x,j+y]
-  img2[i+x,j]=img[i,j+y]
-  img2[i,j+y]=img[i+x,j]
-  img2[i+x,j+y]=img[i,j]
-  
-   
-
-cv.imshow("Imagem modificada", img2)
-cv.imshow("img", img)
-cv.waitKey(0)
-```
-
-<div align="center" >
-  <img src="https://github.com/PedroHenrique18/OpenCV/blob/main/Manipulando%20pixels%20em%20uma%20imagem/trocaregioes.png">
-</div>
